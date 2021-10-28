@@ -1,0 +1,70 @@
+DELETE FROM info WHERE 1;
+DELETE FROM data WHERE 1;
+DELETE FROM processed WHERE 1;
+
+CREATE TABLE info (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    region VARCHAR(100),
+    exchange VARCHAR(100),
+    `index` VARCHAR(100),
+    currency VARCHAR(100)
+);
+
+CREATE TABLE processed (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    `key` INT,
+    `index` VARCHAR(100),
+    `date` DATE,
+    open DECIMAL,
+    high DECIMAL,
+    low DECIMAL,
+    close DECIMAL,
+    adjclose DECIMAL,
+    volume DECIMAL(15),
+    closeUSD DECIMAL
+);
+
+CREATE TABLE data (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    `key` INT,
+    `index` VARCHAR(100),
+    `date` DATE,
+    open DECIMAL,
+    high DECIMAL,
+    low DECIMAL,
+    close DECIMAL,
+    adjclose DECIMAL,
+    volume DECIMAL(15)
+);
+
+CREATE VIEW V_NOTPROCESSED
+    AS SELECT
+        data.*,
+        info.region
+    FROM data
+    INNER JOIN info
+        on info.`index` = data.`index`
+    WHERE data.`key` NOT IN (
+        SELECT DISTINCT `key` FROM processed
+    )
+    ORDER BY info.region;
+
+CREATE VIEW V_PROCESSED AS
+    SELECT
+        YEAR(processed.date) as year,
+        MONTH(processed.date) as month,
+        MIN(processed.low) as low,
+        MAX(processed.open) as open,
+        info.currency,
+        info.exchange,
+        info.region
+    FROM processed
+        INNER JOIN info
+            ON info.`index` = processed.`index`
+    GROUP BY info.region, info.exchange, info.currency, year, month;
+
+DROP VIEW V_PROCESSED;
+DROP VIEW V_NOTPROCESSED;
+
+SELECT * FROM V_NOTPROCESSED;
+SELECT * FROM V_PROCESSED;
